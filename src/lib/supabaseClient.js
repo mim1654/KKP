@@ -11,6 +11,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Nama bucket storage tempat foto disimpan. Harus sama persis
-// dengan nama bucket yang dibuat di dashboard Supabase.
 export const PHOTOS_BUCKET = 'photos'
+
+// Mengambil nama file storage dari public URL, supaya bisa dipakai
+// untuk menghapus file aslinya dari storage saat foto dihapus.
+export function extractStorageFileName(publicUrl) {
+  const marker = `/${PHOTOS_BUCKET}/`
+  const idx = publicUrl.indexOf(marker)
+  if (idx === -1) return null
+  return publicUrl.slice(idx + marker.length)
+}
