@@ -27,6 +27,7 @@ export default function PhotoDetail() {
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -59,33 +60,55 @@ export default function PhotoDetail() {
   }, [load])
 
   async function handleDeletePhoto() {
-    if (!window.confirm('Hapus foto ini beserta semua ceritanya? Tidak bisa dibatalkan.')) {
+    if (!window.confirm('Yakin mau hapus foto ini? Semua ceritanya ikut hilang dan gak bisa balik lagi lho.')) {
       return
     }
+    setActionError('')
     const fileName = extractStorageFileName(photo.image_url)
     if (fileName) {
       await supabase.storage.from(PHOTOS_BUCKET).remove([fileName])
     }
-    await supabase.from('photos').delete().eq('id', photo.id)
+    const { error, count } = await supabase
+      .from('photos')
+      .delete({ count: 'exact' })
+      .eq('id', photo.id)
+
+    if (error || !count) {
+      setActionError(
+        'Gagal menghapus foto. Kemungkinan izin hapus (policy) di Supabase belum diaktifkan.'
+      )
+      return
+    }
     navigate('/')
   }
 
   async function handleDeleteStory(story) {
-    await supabase.from('stories').delete().eq('id', story.id)
+    setActionError('')
+    const { error, count } = await supabase
+      .from('stories')
+      .delete({ count: 'exact' })
+      .eq('id', story.id)
+
+    if (error || !count) {
+      setActionError(
+        'Gagal menghapus cerita. Kemungkinan izin hapus (policy) di Supabase belum diaktifkan — jalankan bagian "POLICY HAPUS" di schema.sql.'
+      )
+      return
+    }
     setStories((prev) => prev.filter((s) => s.id !== story.id))
   }
 
   if (loading) {
     return (
-      <div className="container" style={{ paddingTop: 56 }}>
-        <p style={{ color: 'var(--muted)' }}>Memuat...</p>
+      <div className="container" style={{ paddingTop: 48 }}>
+        <p style={{ color: 'var(--muted)', fontWeight: 700 }}>Memuat...</p>
       </div>
     )
   }
 
   if (notFound) {
     return (
-      <div className="container" style={{ paddingTop: 56 }}>
+      <div className="container" style={{ paddingTop: 48 }}>
         <Link to="/" className="back-link">
           ← Kembali ke feed
         </Link>
@@ -98,16 +121,18 @@ export default function PhotoDetail() {
   }
 
   return (
-    <div className="container" style={{ paddingTop: 56, maxWidth: 720 }}>
+    <div className="container" style={{ paddingTop: 48, maxWidth: 720 }}>
       <Link to="/" className="back-link">
         ← Kembali ke feed
       </Link>
 
+      {actionError && <div className="error-text" style={{ marginBottom: 16 }}>{actionError}</div>}
+
       <div className="detail-hero">
-        <img src={photo.image_url} alt={photo.title || 'Kenangan'} />
+        <img src={photo.image_url} alt={photo.title || 'Kenangan seru'} />
         <div className="detail-hero-gradient" />
         <div className="detail-hero-caption">
-          <h1>{photo.title || 'Tanpa judul'}</h1>
+          <h1>{photo.title || 'Momen tanpa judul'}</h1>
           <p>
             Diunggah oleh {photo.uploader_name}
             {photo.event_date ? ` · ${formatDate(photo.event_date)}` : ''}
@@ -121,14 +146,16 @@ export default function PhotoDetail() {
       </div>
 
       <div className="section-label">
-        {stories.length} {stories.length === 1 ? 'orang mengingat momen ini' : 'orang mengingat momen ini'}
+        {stories.length === 0
+          ? 'Belum ada yang cerita 🤍'
+          : `${stories.length} orang mengingat momen ini ✨`}
       </div>
 
       <div className="stories-stack">
         {stories.length === 0 && (
           <div className="empty-state">
-            <div className="headline">Belum ada cerita.</div>
-            Jadi yang pertama cerita tentang momen ini di bawah.
+            <div className="headline">Jadi yang pertama cerita!</div>
+            Ceritain apa yang kamu ingat dari momen ini di bawah.
           </div>
         )}
         {stories.map((story, i) => (

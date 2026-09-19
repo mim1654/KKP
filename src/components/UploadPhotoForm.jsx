@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, PHOTOS_BUCKET } from '../lib/supabaseClient'
+import { fireConfetti } from '../lib/confetti'
 
 export default function UploadPhotoForm({ onUploaded, onCancel }) {
   const [uploaderName, setUploaderName] = useState('')
@@ -14,11 +15,11 @@ export default function UploadPhotoForm({ onUploaded, onCancel }) {
     setError('')
 
     if (!uploaderName.trim()) {
-      setError('Nama kamu wajib diisi.')
+      setError('Eits, nama kamu belum diisi nih.')
       return
     }
     if (!file) {
-      setError('Pilih foto dulu ya.')
+      setError('Fotonya mana? Pilih dulu ya~')
       return
     }
 
@@ -46,6 +47,7 @@ export default function UploadPhotoForm({ onUploaded, onCancel }) {
 
       if (insertError) throw insertError
 
+      fireConfetti()
       setUploaderName('')
       setTitle('')
       setEventDate('')
@@ -53,7 +55,7 @@ export default function UploadPhotoForm({ onUploaded, onCancel }) {
       onUploaded?.()
     } catch (err) {
       console.error(err)
-      setError('Gagal mengunggah foto. Coba lagi sebentar lagi.')
+      setError('Waduh, gagal mengunggah foto. Coba sekali lagi ya.')
     } finally {
       setSaving(false)
     }
@@ -76,7 +78,7 @@ export default function UploadPhotoForm({ onUploaded, onCancel }) {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="mis. Ngopi di Malang"
+          placeholder="mis. Ngopi seru di Malang"
         />
       </div>
       <div className="field">
@@ -100,7 +102,7 @@ export default function UploadPhotoForm({ onUploaded, onCancel }) {
 
       <div style={{ display: 'flex', gap: 10 }}>
         <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? 'Mengunggah...' : 'Unggah foto'}
+          {saving ? 'Mengunggah...' : '🎉 Unggah foto'}
         </button>
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Batal

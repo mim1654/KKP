@@ -12,6 +12,7 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   const loadPhotos = useCallback(async () => {
     setLoading(true)
@@ -35,23 +36,35 @@ export default function Feed() {
   }, [loadPhotos])
 
   async function handleDeletePhoto(photo) {
+    setActionError('')
     const fileName = extractStorageFileName(photo.image_url)
     if (fileName) {
       await supabase.storage.from(PHOTOS_BUCKET).remove([fileName])
     }
-    await supabase.from('photos').delete().eq('id', photo.id)
+    const { error, count } = await supabase
+      .from('photos')
+      .delete({ count: 'exact' })
+      .eq('id', photo.id)
+
+    if (error || !count) {
+      setActionError(
+        'Gagal menghapus foto. Kemungkinan izin hapus (policy) di Supabase belum diaktifkan — cek lagi bagian "POLICY HAPUS" di schema.sql.'
+      )
+      return
+    }
     setPhotos((prev) => prev.filter((p) => p.id !== photo.id))
   }
 
   return (
-    <div className="container" style={{ paddingTop: 56 }}>
+    <div className="container" style={{ paddingTop: 48 }}>
       <div className="header-row">
         <div>
-          <div className="eyebrow">catatan kelompok</div>
-          <h1 className="page-title">Kenangan yang kita simpan</h1>
+          <div className="eyebrow">✨ catatan kelompok kita</div>
+          <h1 className="page-title">Kenangan yang Kita Rayakan</h1>
           <p className="subtitle">
-            Setiap foto punya cerita berbeda buat tiap orang. Unggah foto, atau
-            buka salah satu dan tulis versi ingatanmu sendiri.
+            Setiap foto punya cerita beda buat tiap orang. Yuk unggah momen
+            seru kalian, atau buka salah satu foto dan tulis versi ingatanmu
+            sendiri!
           </p>
         </div>
         {isAdmin && (
@@ -67,12 +80,28 @@ export default function Feed() {
       </div>
 
       <button
-        className={showForm ? 'btn-secondary' : 'btn-primary'}
-        style={{ marginTop: 28, marginBottom: 8 }}
+        className={`${showForm ? 'btn-secondary' : 'btn-primary'} inline-upload-btn`}
+        style={{ marginTop: 26, marginBottom: 8 }}
         onClick={() => setShowForm((s) => !s)}
       >
-        {showForm ? 'Batal' : '+ Unggah foto baru'}
+        {showForm ? 'Batal' : '📸 Unggah foto baru'}
       </button>
+
+      {!showForm && (
+        <button
+          className="fab-upload"
+          onClick={() => setShowForm(true)}
+          aria-label="Unggah foto baru"
+        >
+          +
+        </button>
+      )}
+
+      {actionError && (
+        <div className="error-text" style={{ marginTop: 12 }}>
+          {actionError}
+        </div>
+      )}
 
       {showForm && (
         <UploadPhotoForm
@@ -84,20 +113,20 @@ export default function Feed() {
         />
       )}
 
-      <div style={{ marginTop: 36 }}>
-        {loading && <p style={{ color: 'var(--muted)' }}>Memuat kenangan...</p>}
+      <div style={{ marginTop: 34 }}>
+        {loading && <p style={{ color: 'var(--muted)', fontWeight: 700 }}>Memuat kenangan seru kalian...</p>}
 
         {!loading && loadError && (
           <div className="empty-state">
-            <div className="headline">Gagal memuat kenangan.</div>
+            <div className="headline">Yah, gagal memuat kenangan.</div>
             Cek koneksi Supabase kamu (URL &amp; anon key di file .env).
           </div>
         )}
 
         {!loading && !loadError && photos.length === 0 && (
           <div className="empty-state">
-            <div className="headline">Belum ada foto di sini.</div>
-            Jadilah yang pertama unggah — tekan tombol di atas.
+            <div className="headline">Masih sepi nih di sini 🤍</div>
+            Jadilah yang pertama unggah momen kalian — tekan tombol di atas!
           </div>
         )}
 

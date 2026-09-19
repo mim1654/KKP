@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { fireConfetti } from '../lib/confetti'
 
 export default function AddStoryForm({ photoId, onAdded }) {
   const [authorName, setAuthorName] = useState('')
@@ -12,11 +13,11 @@ export default function AddStoryForm({ photoId, onAdded }) {
     setError('')
 
     if (!authorName.trim()) {
-      setError('Nama kamu wajib diisi.')
+      setError('Eits, nama kamu belum diisi nih.')
       return
     }
     if (!content.trim()) {
-      setError('Ceritanya jangan kosong dong.')
+      setError('Ceritanya jangan kosong dong, tulis dikit aja gapapa~')
       return
     }
 
@@ -30,12 +31,13 @@ export default function AddStoryForm({ photoId, onAdded }) {
 
       if (insertError) throw insertError
 
+      fireConfetti(16)
       setAuthorName('')
       setContent('')
       onAdded?.()
     } catch (err) {
       console.error(err)
-      setError('Gagal menyimpan cerita. Coba lagi sebentar lagi.')
+      setError('Waduh, gagal menyimpan cerita. Coba sekali lagi ya.')
     } finally {
       setSaving(false)
     }
@@ -53,7 +55,7 @@ export default function AddStoryForm({ photoId, onAdded }) {
         />
       </div>
       <div className="field">
-        <label>Cerita kamu tentang momen ini</label>
+        <label>Apa yang kamu ingat dari momen ini?</label>
         <textarea
           rows={5}
           value={content}
@@ -65,7 +67,7 @@ export default function AddStoryForm({ photoId, onAdded }) {
       {error && <div className="error-text">{error}</div>}
 
       <button type="submit" className="btn-primary" disabled={saving}>
-        {saving ? 'Menyimpan...' : 'Simpan cerita'}
+        {saving ? 'Menyimpan...' : '💬 Simpan cerita'}
       </button>
     </form>
   )
